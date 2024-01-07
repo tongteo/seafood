@@ -45,13 +45,13 @@
 1. Clone the chat-app repository:
 
 ```sh
-git clone https://github.com/tongteo/chat-app
+git clone https://github.com/tongteo/seafood
 ```
 
 2. Change to the project directory:
 
 ```sh
-cd chat-app
+cd seafood
 ```
 
 3. Install the dependencies:
