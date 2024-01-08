@@ -7,9 +7,41 @@
     <title>Chat Now</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.10/dist/clipboard.min.js"></script>
+    <style>
+        .message-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            margin-bottom: 10px;
+        }
+
+        .message-author {
+            font-weight: bold;
+        }
+
+        .right .message-author {
+            text-align: right;
+        }
+
+        .message-content {
+            padding: 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+        }
+
+        .right .message-content {
+            background-color: #D0E2FF;
+            align-self: flex-end;
+        }
+
+        .left .message-content {
+            background-color: #F3F3F3;
+            align-self: flex-start;
+        }
+    </style>
 </head>
-<body class="bg-gray-200 p-4 sm:p-8">
-    <div class="max-w-full md:max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl mx-auto bg-white p-6 rounded-md shadow-md">
+<body class="bg-gray-200 p-4 sm:p-8 h-screen">
+    <div class="max-w-full mx-auto bg-white p-6 rounded-md shadow-md h-full flex flex-col">
         <h1 class="text-xl sm:text-2xl font-semibold mb-4">Chợ Cá Biển</h1>
 
         <div id="login" class="mb-4">
@@ -17,14 +49,14 @@
             <button id="joinChat" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300">Tham gia chat</button>
         </div>
 
-        <div id="chat" class="hidden">
+        <div id="chat" class="hidden flex-1 flex flex-col">
+            <p class="bg-pink-200 mb-2 text-orange-700">Admin - huavinhtrung94@gmail.com</p>
             <p class="mb-2 text-gray-700">Gửi tin nhắn cho bot bằng cách bắt đầu tin nhắn với "@bot"</p>
-            <ul id="messages" class="mb-4 h-64 overflow-auto bg-gray-100 p-4 rounded-md"></ul>
-        <form id="form" action="">
-            <input id="input" class="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-blue-300" autocomplete="off" placeholder="Nhập tin nhắn của bạn" />
-            <button id="sendMessage" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300">Gửi</button>
-      </form>
-
+            <ul id="messages" class="flex-1 overflow-auto bg-gray-100 p-4 rounded-md"></ul>
+            <form id="form" action="">
+                <input id="input" class="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-blue-300" autocomplete="off" placeholder="Nhập tin nhắn của bạn" />
+                <button id="sendMessage" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300">Gửi</button>
+            </form>
         </div>
     </div>
 
@@ -36,65 +68,65 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script>
-    $(function () {
-        var socket = io();
-        var username = '';
+        $(function () {
+            var socket = io();
+            var username = '';
 
-        $('#joinChat').click(function(e) {
-            e.preventDefault();
-            username = $('#username').val().trim();
-            if (username) {
-                $('#login').hide();
-                $('#chat').show();
-                $('#input').focus(); // Focus vào trường nhập tin nhắn
+            $('#joinChat').click(function(e) {
+                e.preventDefault();
+                username = $('#username').val().trim();
+                if (username) {
+                    $('#login').hide();
+                    $('#chat').show();
+                    $('#input').focus(); // Focus vào trường nhập tin nhắn
+                }
+                return false;
+            });
+
+            $('#form').submit(function(e) {
+                e.preventDefault();
+                let message = $('#input').val();
+                if (message) {
+                    socket.emit('chat message', { username: username, message: message });
+                    $('#input').val('');
+                }
+                $('#input').focus(); // Focus lại sau khi gửi
+                return false;
+            });
+
+            socket.on('chat message', function(data){
+                let listItem = $('<li>').addClass('p-2 border-b mb-2');
+                let messageContent = data.message;
+
+                if (data.username === 'Bot') {
+                    listItem.addClass('bg-blue-100 rounded-l-lg')
+                            .html(`<strong>${data.username} (được hỏi bởi ${data.askedBy}):</strong> ${messageContent}`)
+                            .attr('data-clipboard-text', messageContent)
+                            .css('cursor', 'pointer');
+                    listItem.addClass(data.askedBy === username ? 'ml-auto' : 'mr-auto');
+                } else if (data.username === username) {
+                    listItem.addClass('message-container right')
+                            .html(`<div class="message-author"></div><div class="message-content">${messageContent}</div>`);
+                } else {
+                    listItem.addClass('message-container left')
+                            .html(`<div class="message-author">${data.username}</div><div class="message-content">${messageContent}</div>`);
+                }
+                $('#messages').append(listItem);
+                scrollToBottom();
+            });
+
+            function scrollToBottom() {
+                var messages = document.getElementById('messages');
+                messages.scrollTop = messages.scrollHeight;
             }
-            return false;
-        });
 
-        $('#form').submit(function(e) {
-            e.preventDefault();
-            let message = $('#input').val();
-            if (message) {
-                socket.emit('chat message', { username: username, message: message });
-                $('#input').val('');
-            }
-            $('#input').focus(); // Focus lại sau khi gửi
-            return false;
-        });
-socket.on('chat message', function(data){
-            let listItem = $('<li>').addClass('p-2 border-b w-3/4 mb-2');
-            let messageContent = data.message;
-
-            if (data.username === 'Bot') {
-                listItem.addClass('bg-blue-100 rounded-l-lg')
-                        .html(`<strong>${data.username} (được hỏi bởi ${data.askedBy}):</strong> ${messageContent}`)
-                        .attr('data-clipboard-text', messageContent)
-                        .css('cursor', 'pointer');
-                listItem.addClass(data.askedBy === username ? 'ml-auto' : 'mr-auto');
-            } else if (data.username === username) {
-                listItem.addClass('ml-auto bg-blue-200 rounded-l-lg')
-                        .html(`<strong>${data.username}:</strong> ${messageContent}`);
-            } else {
-                listItem.addClass('mr-auto bg-gray-200 rounded-r-lg')
-                        .html(`<strong>${data.username}:</strong> ${messageContent}`);
-            }
-
-            $('#messages').append(listItem);
-            scrollToBottom();
-        });
-
-        function scrollToBottom() {
-            var messages = document.getElementById('messages');
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        $('#messages').on('click', 'li[data-clipboard-text]', function() {
-            let text = $(this).attr('data-clipboard-text');
-            navigator.clipboard.writeText(text).then(() => {
-                $('#copyFeedback').fadeIn().delay(1000).fadeOut();
+            $('#messages').on('click', 'li[data-clipboard-text]', function() {
+                let text = $(this).attr('data-clipboard-text');
+                navigator.clipboard.writeText(text).then(() => {
+                    $('#copyFeedback').fadeIn().delay(1000).fadeOut();
+                });
             });
         });
-    });
-</script>
+    </script>
 </body>
 </html>
