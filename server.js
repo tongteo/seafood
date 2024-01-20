@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-const BOT_SERVER_URL = 'https://geny.life'; // Thay đổi URL nếu cần
+const BOT_SERVER_URL = 'http://localhost:5000/generate'; 
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
